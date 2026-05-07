@@ -1,0 +1,85 @@
+# NASA CMAPSS FD001 QA Prep
+
+This project prepares the NASA CMAPSS `FD001` turbofan degradation dataset for a simple technical question-answering workflow focused on failure behavior and failure prediction signals.
+
+Current scope:
+
+- parse the raw `FD001` files from `data/`
+- compute row-level training `RUL`
+- generate reusable processed artifacts in `processed/`
+- rank sensors by stability and informativeness
+
+## Project Structure
+
+- `data/`: raw NASA CMAPSS dataset files
+- `processed/`: generated artifacts
+- `process_fd001.py`: processing pipeline for `FD001`
+- `requirements.txt`: Python dependencies
+
+## Setup
+
+Install dependencies:
+
+```powershell
+pip install -r requirements.txt
+```
+
+Run the processing pipeline:
+
+```powershell
+python process_fd001.py
+```
+
+## Generated Outputs
+
+The pipeline writes these files into `processed/`:
+
+- `fd001_train_processed.csv`: training rows with named columns and computed row-level `RUL`
+- `fd001_test_processed.csv`: test rows with named columns
+- `fd001_test_rul.json`: true remaining useful life labels for the test engines
+- `fd001_metadata.json`: base dataset facts for `FD001`
+- `fd001_sensor_stats.json`: first-pass per-feature statistics
+- `fd001_sensor_rankings.json`: ranked sensor summary for technical QA
+
+## Step 1
+
+Step 1 creates the base analysis layer for `FD001`.
+
+It provides:
+
+- parsed train and test tables
+- computed training `RUL`
+- dataset-level metadata
+- first-pass feature statistics
+
+This supports:
+
+- subset metadata questions
+- baseline sensor inspection
+- later engine-level drift summaries
+- later degradation-onset heuristics
+
+## Step 2
+
+Step 2 adds a ranked sensor summary for `FD001`.
+
+Each sensor entry in `fd001_sensor_rankings.json` includes:
+
+- `label`: `informative`, `moderate_signal`, or `stable`
+- `informativeness_score`
+- `rul_correlation`
+- `mean_shift_early_to_late`
+- `median_abs_engine_corr`
+- `trend_sign_consistency`
+- `degradation_direction`
+
+This supports questions such as:
+
+- "Which sensors show the clearest degradation trend before failure in FD001?"
+- "Which sensors are stable vs informative for failure prediction?"
+
+## Next Planned Step
+
+The next step is engine-level drift summaries so the project can answer questions like:
+
+- "For engine 25, which variables drift most as failure approaches?"
