@@ -1,0 +1,17 @@
+# Data and generated outputs
+data/
+processed/
+
+# Virtual environments
+venv/
+.venv/
+
+# Python caches / build artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Environment files
+.env
+.env.*

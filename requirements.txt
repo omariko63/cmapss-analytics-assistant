@@ -1,0 +1,23 @@
+# Core data processing
+numpy>=1.26,<3
+pandas>=2.2,<3
+pyarrow>=16,<20
+
+# Statistics / modeling
+scipy>=1.13,<2
+scikit-learn>=1.5,<2
+
+# Queryable local storage
+duckdb>=1.0,<2
+
+# Document ingestion
+pypdf>=4.2,<6
+
+# LLM / embeddings
+openai>=1.30,<2
+tiktoken>=0.7,<1
+python-dotenv>=1.0,<2
+
+# Lightweight API / app layer
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
