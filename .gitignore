@@ -1,5 +1,4 @@
 # Data directories are kept in git, but their contents are ignored
-data/*
 !data/.gitkeep
 
 processed/*

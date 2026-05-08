@@ -34,6 +34,18 @@ Run the processing pipeline:
 python scripts/process_fd001.py
 ```
 
+Run the backend locally:
+
+```powershell
+python main.py
+```
+
+Current backend endpoints:
+
+- `GET /`
+- `GET /api/v1/health`
+- `GET /api/v1/datasets/{dataset_id}/metadata`
+
 ## Generated Outputs
 
 The pipeline writes these files into `processed/`:
