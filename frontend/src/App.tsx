@@ -34,6 +34,9 @@ export default function App() {
   const [metadata, setMetadata] = useState<DatasetMetadata | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [history, setHistory] = useState<
+    { role: "user" | "bot"; text: string }[]
+  >([]);
 
   useEffect(() => {
     localStorage.setItem("theme", theme);
@@ -62,7 +65,13 @@ export default function App() {
     };
     setSessions((prev) => [session, ...prev]);
     setActiveId(id);
+    setHistory([]);
     return session;
+  }
+
+  function handleSelectSession(id: string) {
+    setActiveId(id);
+    setHistory([]); // history is per-session; rebuild isn't worth the complexity
   }
 
   function updateSession(id: string, updater: (s: ChatSession) => ChatSession) {
@@ -70,7 +79,6 @@ export default function App() {
   }
 
   async function handleSend(text: string) {
-    // Create session if none active
     let id = activeId;
     if (!id) {
       const session = newSession();
@@ -84,16 +92,34 @@ export default function App() {
       messages: [...s.messages, userMsg],
     }));
 
+    // Build context string from last 6 exchanges (3 turns)
+    const contextString =
+      history.length > 0
+        ? history
+            .slice(-6)
+            .map(
+              (h) => `${h.role === "user" ? "User" : "Assistant"}: ${h.text}`,
+            )
+            .join("\n")
+        : undefined;
+
     setLoading(true);
     try {
-      const data = await sendMessage(text);
+      const data = await sendMessage(text, contextString);
       const botMsg: Message = {
         role: "bot",
-        text: data.answer ?? "_(No answer returned — check your GROQ_API_KEY)_",
+        text: data.answer ?? "_(No answer returned)_",
         parsed: data.parsed,
         llm_available: data.llm_available,
       };
       updateSession(id, (s) => ({ ...s, messages: [...s.messages, botMsg] }));
+
+      // Append this exchange to history
+      setHistory((prev) => [
+        ...prev,
+        { role: "user", text },
+        { role: "bot", text: botMsg.text },
+      ]);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Unknown error";
       updateSession(id, (s) => ({
@@ -119,7 +145,7 @@ export default function App() {
         metadata={metadata}
         sessions={sessions}
         activeId={activeId}
-        onSelectSession={setActiveId}
+        onSelectSession={handleSelectSession}
         onNewChat={() => {
           newSession();
         }}
