@@ -20,12 +20,19 @@ class NLPService:
         return json.dumps(
             value,
             indent=2,
-            default=lambda obj: obj.model_dump() if hasattr(obj, "model_dump") else str(obj),
+            default=lambda obj: (
+                obj.model_dump() if hasattr(obj, "model_dump") else str(obj)
+            ),
         )
 
-    def _build_structured_context(self, parsed: dict, user_context: str | None) -> str | None:
+    def _build_structured_context(
+        self, parsed: dict, user_context: str | None
+    ) -> str | None:
         context_parts: list[str] = []
-        dataset_id = parsed["dataset_ids"][0] if parsed["dataset_ids"] else None
+
+        # DEFAULT TO fd001 when intent involves engines/sensors but no dataset specified
+        dataset_id = parsed["dataset_ids"][0] if parsed["dataset_ids"] else "fd001"
+
         intent = parsed["intent"]
 
         try:
@@ -42,7 +49,9 @@ class NLPService:
                 )
 
                 if intent == "sensor_ranking":
-                    informative = self.dataset_service.get_informative_sensors(dataset_id)[:8]
+                    informative = self.dataset_service.get_informative_sensors(
+                        dataset_id
+                    )[:8]
                     stable = self.dataset_service.get_stable_sensors(dataset_id)[:8]
                     context_parts.append(
                         "Top informative sensors:\n"
@@ -55,7 +64,9 @@ class NLPService:
 
                 if intent == "engine_detail" and parsed["unit_ids"]:
                     engine_id = parsed["unit_ids"][0]
-                    engine_summary = self.dataset_service.get_engine_summary(dataset_id, engine_id)
+                    engine_summary = self.dataset_service.get_engine_summary(
+                        dataset_id, engine_id
+                    )
                     context_parts.append(
                         f"Engine summary for {dataset_id} engine {engine_id}:\n"
                         f"{self._safe_json(engine_summary.model_dump())}"
