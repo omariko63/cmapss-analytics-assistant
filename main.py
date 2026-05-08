@@ -17,6 +17,12 @@ def run() -> None:
         host=host,
         port=port,
         reload=reload_enabled,
+        reload_excludes=[
+            "*.venv",
+            "*.venv/**",
+            "venv/**",
+            "venv/**",
+        ],
     )
 
 
