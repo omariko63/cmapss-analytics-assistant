@@ -1,15 +1,25 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Message } from "../App";
+import { fetchSuggestions, type Suggestion } from "../api";
 import MessageBubble from "./MessageBubble";
 
-const SUGGESTIONS = [
-  "Engine 12 failure metrics",
-  "Which engines failed earliest?",
-  "Fleet summary",
-  "Which sensors predict failure?",
-  "Engine 77 test RUL",
-  "Compare engine 5 and engine 50",
+const FALLBACK_SUGGESTIONS = [
+  "Give me a fleet summary",
+  "Which sensors predict failure best in FD001?",
+  "Tell me about engine 25 in FD001",
+  "Which datasets model fan degradation?",
+  "Which sensors are stable in FD001?",
+  "Which engines failed earliest in FD001?",
 ];
+
+const CATEGORY_COLORS: Record<string, string> = {
+  dataset: "#2563eb",
+  sensor: "#059669",
+  engine: "#d97706",
+  comparison: "#7c3aed",
+  fleet: "#0891b2",
+  general: "#6b7280",
+};
 
 interface ChatWindowProps {
   messages: Message[];
@@ -23,10 +33,35 @@ export default function ChatWindow({
   onSuggestion,
 }: ChatWindowProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [starterSuggestions, setStarterSuggestions] = useState<Suggestion[]>([]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    const categories = ["sensor", "engine", "dataset", "comparison", "fleet", "general"];
+    const picks: Suggestion[] = [];
+    Promise.all(
+      categories.map((cat) =>
+        fetchSuggestions(cat, 3).catch(() => [] as Suggestion[])
+      )
+    ).then((results) => {
+      for (const group of results) {
+        for (const s of group) {
+          if (picks.length < 6 && !picks.some((p) => p.text === s.text)) {
+            picks.push(s);
+          }
+        }
+      }
+      if (picks.length > 0) setStarterSuggestions(picks);
+    });
+  }, []);
+
+  const displaySuggestions =
+    starterSuggestions.length > 0
+      ? starterSuggestions
+      : FALLBACK_SUGGESTIONS.map((t) => ({ text: t, category: "general" }));
 
   return (
     <div
@@ -74,10 +109,10 @@ export default function ChatWindow({
               maxWidth: 560,
             }}
           >
-            {SUGGESTIONS.map((s) => (
+            {displaySuggestions.map((s) => (
               <button
-                key={s}
-                onClick={() => onSuggestion(s)}
+                key={s.text}
+                onClick={() => onSuggestion(s.text)}
                 style={{
                   padding: "12px 14px",
                   background: "var(--bg-secondary)",
@@ -89,6 +124,9 @@ export default function ChatWindow({
                   cursor: "pointer",
                   lineHeight: 1.4,
                   transition: "all 0.15s",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = "var(--bg-hover)";
@@ -99,7 +137,18 @@ export default function ChatWindow({
                   e.currentTarget.style.borderColor = "var(--border)";
                 }}
               >
-                {s}
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    color: CATEGORY_COLORS[s.category] ?? "var(--text-muted)",
+                  }}
+                >
+                  {s.category}
+                </span>
+                {s.text}
               </button>
             ))}
           </div>

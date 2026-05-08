@@ -112,3 +112,23 @@ export async function sendMessage(
   });
   return res.data;
 }
+
+export interface Suggestion {
+  text: string;
+  category: string;
+}
+
+export interface SuggestionResponse {
+  suggestions: Suggestion[];
+}
+
+export async function fetchSuggestions(
+  query: string,
+  limit = 8,
+): Promise<Suggestion[]> {
+  if (query.length < 2) return [];
+  const res = await axios.get<SuggestionResponse>("/api/v1/suggestions", {
+    params: { q: query, limit },
+  });
+  return res.data.suggestions;
+}
