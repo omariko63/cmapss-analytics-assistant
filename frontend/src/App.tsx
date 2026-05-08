@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
-import { fetchMetadata, sendMessage, type DatasetMetadata, type NlpParsed } from "./api";
+import {
+  sendMessage,
+  fetchMetadata,
+  type DatasetMetadata,
+  type NlpParsed,
+} from "./api";
 import Sidebar from "./components/Sidebar";
 import ChatWindow from "./components/ChatWindow";
 import InputBar from "./components/InputBar";
@@ -19,16 +24,25 @@ export interface ChatSession {
 }
 
 export default function App() {
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
-  const [sidebarOpen, setSidebar] = useState(true);
-  const [metadata, setMetadata] = useState<DatasetMetadata | null>(null);
+  const [theme, setTheme] = useState<"light" | "dark">(
+    () => (localStorage.getItem("theme") as "light" | "dark") ?? "dark",
+  );
+  const [sidebarOpen, setSidebar] = useState<boolean>(
+    () => localStorage.getItem("sidebarOpen") !== "false",
+  );
   const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [metadata, setMetadata] = useState<DatasetMetadata | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    localStorage.setItem("theme", theme);
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    localStorage.setItem("sidebarOpen", String(sidebarOpen));
+  }, [sidebarOpen]);
 
   useEffect(() => {
     fetchMetadata("fd001").then(setMetadata).catch(console.error);

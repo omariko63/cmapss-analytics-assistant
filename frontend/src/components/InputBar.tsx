@@ -27,13 +27,12 @@ export default function InputBar({ onSend, disabled }: InputBarProps) {
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    if (value.trim().length < 2) {
-      setSuggestions([]);
-      setShowDropdown(false);
-      return;
-    }
-
     debounceRef.current = setTimeout(() => {
+      if (value.trim().length < 2) {
+        setSuggestions([]);
+        setShowDropdown(false);
+        return;
+      }
       fetchSuggestions(value.trim())
         .then((results) => {
           setSuggestions(results);
@@ -50,7 +49,6 @@ export default function InputBar({ onSend, disabled }: InputBarProps) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [value]);
-
   function selectSuggestion(text: string) {
     setValue("");
     setSuggestions([]);
@@ -64,14 +62,14 @@ export default function InputBar({ onSend, disabled }: InputBarProps) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
         setSelectedIndex((prev) =>
-          prev < suggestions.length - 1 ? prev + 1 : 0
+          prev < suggestions.length - 1 ? prev + 1 : 0,
         );
         return;
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedIndex((prev) =>
-          prev > 0 ? prev - 1 : suggestions.length - 1
+          prev > 0 ? prev - 1 : suggestions.length - 1,
         );
         return;
       }
@@ -318,7 +316,7 @@ function highlightMatch(text: string, query: string): React.ReactNode {
           </strong>
         ) : (
           <span key={i}>{part}</span>
-        )
+        ),
       )}
     </>
   );

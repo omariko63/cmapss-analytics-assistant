@@ -127,6 +127,7 @@ export default function ChatWindow({
                   display: "flex",
                   flexDirection: "column",
                   gap: 4,
+                  fontFamily: "var(--font-sans)",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = "var(--bg-hover)";
@@ -162,14 +163,18 @@ export default function ChatWindow({
             flexDirection: "column",
           }}
         >
-          {messages.map((m, i) => (
-            <MessageBubble
-              key={i}
-              role={m.role}
-              text={m.text}
-              parsed={m.parsed}
-            />
-          ))}
+          {messages.map((m, i) => {
+            const isLastBot = m.role === "bot" && i === messages.length - 1;
+            return (
+              <MessageBubble
+                key={i}
+                role={m.role}
+                text={m.text}
+                parsed={m.parsed}
+                animate={isLastBot}
+              />
+            );
+          })}
           {loading && <ThinkingIndicator />}
           <div ref={bottomRef} />
         </div>
@@ -201,7 +206,12 @@ function ThinkingIndicator() {
           }}
         />
       ))}
-      <style>{`@keyframes bounce{0%,80%,100%{transform:scale(0.7);opacity:0.4}40%{transform:scale(1);opacity:1}}`}</style>
+      <style>{`
+        @keyframes bounce {
+          0%, 80%, 100% { transform: scale(0.7); opacity: 0.4; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }
