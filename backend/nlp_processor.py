@@ -1,17 +1,34 @@
 from __future__ import annotations
+import os
 import re
-import nltk
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
-from nltk import pos_tag
 
-# Download required NLTK data
-for pkg in ("punkt", "stopwords", "wordnet", "averaged_perceptron_tagger", "punkt_tab"):
-    try:
-        nltk.download(pkg, quiet=True)
-    except Exception:
-        pass
+from dotenv import load_dotenv
+from openai import OpenAI
+
+load_dotenv()
+
+try:
+    import nltk
+    from nltk import pos_tag
+    from nltk.corpus import stopwords
+    from nltk.stem import WordNetLemmatizer
+    from nltk.tokenize import word_tokenize
+
+    NLTK_AVAILABLE = True
+except Exception:
+    nltk = None
+    pos_tag = None
+    stopwords = None
+    WordNetLemmatizer = None
+    word_tokenize = None
+    NLTK_AVAILABLE = False
+
+if NLTK_AVAILABLE:
+    for pkg in ("punkt", "stopwords", "wordnet", "averaged_perceptron_tagger", "punkt_tab"):
+        try:
+            nltk.download(pkg, quiet=True)
+        except Exception:
+            pass
 
 
 def _get_wordnet_pos(treebank_tag: str) -> str:
@@ -30,8 +47,28 @@ def _get_wordnet_pos(treebank_tag: str) -> str:
         return wordnet.NOUN  # Default to noun if unknown
 
 
-LEMMATIZER = WordNetLemmatizer()
-STOP_WORDS = set(stopwords.words("english")) - {"which", "what", "how", "when", "no"}
+LEMMATIZER = WordNetLemmatizer() if NLTK_AVAILABLE else None
+STOP_WORDS = (
+    set(stopwords.words("english")) - {"which", "what", "how", "when", "no"}
+    if NLTK_AVAILABLE
+    else {
+        "the",
+        "a",
+        "an",
+        "is",
+        "are",
+        "and",
+        "or",
+        "to",
+        "of",
+        "in",
+        "for",
+        "on",
+        "me",
+        "tell",
+        "about",
+    }
+)
 
 # Intent keyword maps
 INTENT_KEYWORDS = {
@@ -53,6 +90,17 @@ SPLIT_KEYWORDS = {
     "train": ["train", "history", "full", "failure", "failed"],
 }
 
+SYSTEM_PROMPT = """You are an NLP assistant for a NASA CMAPSS backend.
+
+Your job is to:
+- interpret user questions about CMAPSS datasets, engines, sensors, degradation, and RUL
+- use the parsed NLP output provided to you
+- answer concisely and technically
+- avoid fabricating measurements or claiming backend facts you were not given
+
+If structured backend context is provided, rely on it.
+If no structured backend context is provided, answer only at a general interpretation level."""
+
 
 def process_prompt(user_message: str) -> dict:
     """
@@ -69,14 +117,20 @@ def process_prompt(user_message: str) -> dict:
 
     # Lowercasing and tokenization
     lowered = raw.lower()
-    tokens = word_tokenize(lowered)
+    if NLTK_AVAILABLE and word_tokenize is not None:
+        tokens = word_tokenize(lowered)
+    else:
+        tokens = re.findall(r"[a-zA-Z0-9_]+", lowered)
 
     # Remove stopwords
     filtered = [t for t in tokens if t.isalpha() and t not in STOP_WORDS]
 
     # Lemmatize with POS tagging
-    tagged = pos_tag(filtered)
-    lemmas = [LEMMATIZER.lemmatize(word, _get_wordnet_pos(tag)) for word, tag in tagged]
+    if NLTK_AVAILABLE and pos_tag is not None and LEMMATIZER is not None:
+        tagged = pos_tag(filtered)
+        lemmas = [LEMMATIZER.lemmatize(word, _get_wordnet_pos(tag)) for word, tag in tagged]
+    else:
+        lemmas = filtered[:]
 
     # Extract engine IDs using regex on original message
     unit_ids = []
@@ -89,6 +143,8 @@ def process_prompt(user_message: str) -> dict:
             unit_ids.append(int(match))
 
     unit_ids = sorted(set(unit_ids))  # Remove duplicates and sort
+
+    dataset_ids = sorted({match.upper() for match in re.findall(r"\bfd00[1-4]\b", lowered, flags=re.I)})
 
     # Classify intent by matching lemmas against keyword sets
     intent = "general"
@@ -116,8 +172,71 @@ def process_prompt(user_message: str) -> dict:
         "filtered": filtered,
         "lemmas": lemmas,
         "unit_ids": unit_ids,
+        "dataset_ids": dataset_ids,
         "intent": intent,
         "split": split,
+    }
+
+
+class LLMProcessor:
+    """Thin Groq-backed LLM wrapper for NLP interpretation."""
+
+    def __init__(self) -> None:
+        self.model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+        self.api_key = os.getenv("GROQ_API_KEY", "").strip()
+        self.client = None
+        if self.api_key:
+            self.client = OpenAI(
+                api_key=self.api_key,
+                base_url="https://api.groq.com/openai/v1",
+            )
+
+    @property
+    def available(self) -> bool:
+        return self.client is not None
+
+    def build_prompt(self, user_message: str, parsed: dict, context: str | None = None) -> str:
+        prompt_parts = [
+            f"User message: {user_message}",
+            f"Parsed NLP output: {parsed}",
+        ]
+        if context:
+            prompt_parts.append(f"Structured backend context: {context}")
+        prompt_parts.append(
+            "Respond with a concise answer. If context is insufficient for exact facts, say so clearly."
+        )
+        return "\n\n".join(prompt_parts)
+
+    def generate(self, user_message: str, parsed: dict, context: str | None = None) -> str:
+        if not self.client:
+            raise RuntimeError("GROQ_API_KEY is not configured.")
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {
+                    "role": "user",
+                    "content": self.build_prompt(user_message=user_message, parsed=parsed, context=context),
+                },
+            ],
+            temperature=0.2,
+            max_tokens=700,
+        )
+        return response.choices[0].message.content or ""
+
+
+def process_and_generate(user_message: str, context: str | None = None) -> dict:
+    parsed = process_prompt(user_message)
+    llm = LLMProcessor()
+    answer = None
+    if llm.available:
+        answer = llm.generate(user_message=user_message, parsed=parsed, context=context)
+
+    return {
+        "parsed": parsed,
+        "llm_available": llm.available,
+        "answer": answer,
     }
 
 

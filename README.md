@@ -50,6 +50,16 @@ Current backend endpoints:
 - `GET /api/v1/datasets/{dataset_id}/sensors/informative`
 - `GET /api/v1/datasets/{dataset_id}/sensors/stable`
 - `GET /api/v1/datasets/{dataset_id}/engines/{engine_id}`
+- `POST /api/v1/nlp/process`
+
+Create a local `.env` file for LLM access:
+
+```env
+GROQ_API_KEY=your_key_here
+GROQ_MODEL=llama-3.3-70b-versatile
+```
+
+The NLP route automatically augments LLM prompts with backend dataset metadata, sensor rankings, and engine summaries when the message includes a dataset like `FD001` and/or an engine ID.
 
 ## Generated Outputs
 
