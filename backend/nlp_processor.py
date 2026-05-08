@@ -121,23 +121,24 @@ def process_prompt(user_message: str) -> dict:
     }
 
 
-if __name__ == "__main__":
-    test_queries = [
-        "Tell me about engine 12 failure metrics",
-        "What is the RUL for engine 77 in the test set?",
-        "Which engines failed earliest?",
-        "Give me a fleet summary",
-        "Which sensors predict failure best?",
-        "Compare engine 5 and engine 50",
-    ]
+# Simple test cases to verify the NLP processing logic
+# if __name__ == "__main__":
+#     test_queries = [
+#         "Tell me about engine 12 failure metrics",
+#         "What is the RUL for engine 77 in the test set?",
+#         "Which engines failed earliest?",
+#         "Give me a fleet summary",
+#         "Which sensors predict failure best?",
+#         "Compare engine 5 and engine 50",
+#     ]
 
-    for q in test_queries:
-        result = process_prompt(q)
-        print(f"Q: {q}")
-        print(f"  tokens:   {result['tokens']}")
-        print(f"  filtered: {result['filtered']}")
-        print(f"  lemmas:   {result['lemmas']}")
-        print(f"  intent:   {result['intent']}")
-        print(f"  unit_ids: {result['unit_ids']}")
-        print(f"  split:    {result['split']}")
-        print()
+#     for q in test_queries:
+#         result = process_prompt(q)
+#         print(f"Q: {q}")
+#         print(f"  tokens:   {result['tokens']}")
+#         print(f"  filtered: {result['filtered']}")
+#         print(f"  lemmas:   {result['lemmas']}")
+#         print(f"  intent:   {result['intent']}")
+#         print(f"  unit_ids: {result['unit_ids']}")
+#         print(f"  split:    {result['split']}")
+#         print()
