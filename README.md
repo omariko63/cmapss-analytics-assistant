@@ -11,10 +11,14 @@ Current scope:
 
 ## Project Structure
 
+- `backend/`: backend application code placeholder
+- `frontend/`: frontend application code placeholder
+- `scripts/`: data processing and utility scripts
 - `data/`: raw NASA CMAPSS dataset files
 - `processed/`: generated artifacts
-- `process_fd001.py`: processing pipeline for `FD001`
 - `requirements.txt`: Python dependencies
+
+`data/` and `processed/` are intentionally kept in the repository as directories, but their contents are ignored by git. Only `.gitkeep` is tracked in those folders.
 
 ## Setup
 
@@ -27,7 +31,7 @@ pip install -r requirements.txt
 Run the processing pipeline:
 
 ```powershell
-python process_fd001.py
+python scripts/process_fd001.py
 ```
 
 ## Generated Outputs
