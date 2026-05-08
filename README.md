@@ -1,10 +1,10 @@
 # NASA CMAPSS FD001 QA Prep
 
-This project prepares the NASA CMAPSS `FD001` turbofan degradation dataset for a simple technical question-answering workflow focused on failure behavior and failure prediction signals.
+This project prepares the NASA CMAPSS turbofan degradation datasets for a simple technical question-answering workflow focused on failure behavior and failure prediction signals.
 
 Current scope:
 
-- parse the raw `FD001` files from `data/`
+- parse the raw `FD001` to `FD004` files from `data/`
 - compute row-level training `RUL`
 - generate reusable processed artifacts in `processed/`
 - rank sensors by stability and informativeness
@@ -44,11 +44,16 @@ Current backend endpoints:
 
 - `GET /`
 - `GET /api/v1/health`
+- `GET /api/v1/datasets`
 - `GET /api/v1/datasets/{dataset_id}/metadata`
+- `GET /api/v1/datasets/{dataset_id}/sensors/rankings`
+- `GET /api/v1/datasets/{dataset_id}/sensors/informative`
+- `GET /api/v1/datasets/{dataset_id}/sensors/stable`
+- `GET /api/v1/datasets/{dataset_id}/engines/{engine_id}`
 
 ## Generated Outputs
 
-The pipeline writes these files into `processed/`:
+The pipeline writes these files into `processed/` for each dataset subset (`FD001` to `FD004`):
 
 - `fd001_train_processed.csv`: training rows with named columns and computed row-level `RUL`
 - `fd001_test_processed.csv`: test rows with named columns
@@ -56,6 +61,9 @@ The pipeline writes these files into `processed/`:
 - `fd001_metadata.json`: base dataset facts for `FD001`
 - `fd001_sensor_stats.json`: first-pass per-feature statistics
 - `fd001_sensor_rankings.json`: ranked sensor summary for technical QA
+- `fd001_engine_summaries.json`: per-engine drift and degradation summaries
+
+The same file pattern is generated for `fd002`, `fd003`, and `fd004`.
 
 ## Step 1
 
