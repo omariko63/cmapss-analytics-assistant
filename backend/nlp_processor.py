@@ -16,15 +16,36 @@ try:
 
     NLTK_AVAILABLE = True
 except Exception:
-    nltk = None
-    pos_tag = None
-    stopwords = None
-    WordNetLemmatizer = None
-    word_tokenize = None
+    _pos_tag = None  # type: ignore[assignment]
+    _word_tokenize = None  # type: ignore[assignment]
+    LEMMATIZER = None
+    STOP_WORDS = {
+        "the",
+        "a",
+        "an",
+        "is",
+        "are",
+        "and",
+        "or",
+        "to",
+        "of",
+        "in",
+        "for",
+        "on",
+        "me",
+        "tell",
+        "about",
+    }
     NLTK_AVAILABLE = False
 
 if NLTK_AVAILABLE:
-    for pkg in ("punkt", "stopwords", "wordnet", "averaged_perceptron_tagger", "punkt_tab"):
+    for pkg in (
+        "punkt",
+        "stopwords",
+        "wordnet",
+        "averaged_perceptron_tagger",
+        "punkt_tab",
+    ):
         try:
             nltk.download(pkg, quiet=True)
         except Exception:
@@ -128,7 +149,9 @@ def process_prompt(user_message: str) -> dict:
     # Lemmatize with POS tagging
     if NLTK_AVAILABLE and pos_tag is not None and LEMMATIZER is not None:
         tagged = pos_tag(filtered)
-        lemmas = [LEMMATIZER.lemmatize(word, _get_wordnet_pos(tag)) for word, tag in tagged]
+        lemmas = [
+            LEMMATIZER.lemmatize(word, _get_wordnet_pos(tag)) for word, tag in tagged
+        ]
     else:
         lemmas = filtered[:]
 
@@ -144,7 +167,9 @@ def process_prompt(user_message: str) -> dict:
 
     unit_ids = sorted(set(unit_ids))  # Remove duplicates and sort
 
-    dataset_ids = sorted({match.upper() for match in re.findall(r"\bfd00[1-4]\b", lowered, flags=re.I)})
+    dataset_ids = sorted(
+        {match.upper() for match in re.findall(r"\bfd00[1-4]\b", lowered, flags=re.I)}
+    )
 
     # Classify intent by matching lemmas against keyword sets
     intent = "general"
@@ -195,7 +220,9 @@ class LLMProcessor:
     def available(self) -> bool:
         return self.client is not None
 
-    def build_prompt(self, user_message: str, parsed: dict, context: str | None = None) -> str:
+    def build_prompt(
+        self, user_message: str, parsed: dict, context: str | None = None
+    ) -> str:
         prompt_parts = [
             f"User message: {user_message}",
             f"Parsed NLP output: {parsed}",
@@ -207,7 +234,9 @@ class LLMProcessor:
         )
         return "\n\n".join(prompt_parts)
 
-    def generate(self, user_message: str, parsed: dict, context: str | None = None) -> str:
+    def generate(
+        self, user_message: str, parsed: dict, context: str | None = None
+    ) -> str:
         if not self.client:
             raise RuntimeError("GROQ_API_KEY is not configured.")
 
@@ -217,7 +246,9 @@ class LLMProcessor:
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {
                     "role": "user",
-                    "content": self.build_prompt(user_message=user_message, parsed=parsed, context=context),
+                    "content": self.build_prompt(
+                        user_message=user_message, parsed=parsed, context=context
+                    ),
                 },
             ],
             temperature=0.2,
