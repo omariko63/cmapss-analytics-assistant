@@ -4,6 +4,7 @@ import { fetchSuggestions, type Suggestion } from "../api";
 interface InputBarProps {
   onSend: (text: string) => void;
   disabled: boolean;
+  prefill?: string;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -15,7 +16,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   general: "General",
 };
 
-export default function InputBar({ onSend, disabled }: InputBarProps) {
+export default function InputBar({ onSend, disabled, prefill }: InputBarProps) {
   const [value, setValue] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -23,6 +24,18 @@ export default function InputBar({ onSend, disabled }: InputBarProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!prefill) return;
+    setTimeout(() => {
+      setValue(prefill); // ← must be inside setTimeout, not before it
+      ref.current?.focus();
+      if (ref.current) {
+        ref.current.selectionStart = ref.current.value.length;
+        ref.current.selectionEnd = ref.current.value.length;
+      }
+    }, 0);
+  }, [prefill]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);

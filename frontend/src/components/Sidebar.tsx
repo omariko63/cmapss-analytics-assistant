@@ -12,6 +12,7 @@ interface SidebarProps {
   onNewChat: () => void;
   theme: "light" | "dark";
   onToggleTheme: () => void;
+  onEngineClick: (text: string) => void;
 }
 
 type Tab = "history" | "engines" | "dataset";
@@ -26,6 +27,7 @@ export default function Sidebar({
   onNewChat,
   theme,
   onToggleTheme,
+  onEngineClick,
 }: SidebarProps) {
   const [tab, setTab] = useState<Tab>("history");
   const [hovered, setHovered] = useState(false);
@@ -98,6 +100,7 @@ export default function Sidebar({
             theme={theme}
             onToggleTheme={onToggleTheme}
             onToggle={onToggle}
+            onEngineClick={onEngineClick}
             isPinned={true}
           />
         </div>
@@ -140,6 +143,7 @@ export default function Sidebar({
               theme={theme}
               onToggleTheme={onToggleTheme}
               onToggle={onToggle}
+              onEngineClick={onEngineClick}
               isPinned={false}
             />
           )}
@@ -149,7 +153,7 @@ export default function Sidebar({
   );
 }
 
-// ── Inner content (shared between pinned and hover modes) ────
+// Inner content (shared between pinned and hover modes)
 
 interface ContentProps {
   tab: "history" | "engines" | "dataset";
@@ -163,6 +167,7 @@ interface ContentProps {
   onToggleTheme: () => void;
   onToggle: () => void;
   isPinned: boolean;
+  onEngineClick: (text: string) => void;
 }
 
 function SidebarContent({
@@ -177,6 +182,7 @@ function SidebarContent({
   onToggleTheme,
   onToggle,
   isPinned,
+  onEngineClick,
 }: ContentProps) {
   return (
     <div
@@ -314,14 +320,16 @@ function SidebarContent({
             onSelect={onSelectSession}
           />
         )}
-        {tab === "engines" && <EnginesTab metadata={metadata} />}
+        {tab === "engines" && (
+          <EnginesTab metadata={metadata} onEngineClick={onEngineClick} />
+        )}
         {tab === "dataset" && <DatasetTab metadata={metadata} />}
       </div>
     </div>
   );
 }
 
-// ── History Tab ──────────────────────────────────────────────
+// History Tab
 
 function HistoryTab({
   sessions,
@@ -392,9 +400,15 @@ function HistoryTab({
   );
 }
 
-// ── Engines Tab ──────────────────────────────────────────────
+// Engines Tab
 
-function EnginesTab({ metadata }: { metadata: DatasetMetadata | null }) {
+function EnginesTab({
+  metadata,
+  onEngineClick,
+}: {
+  metadata: DatasetMetadata | null;
+  onEngineClick: (text: string) => void;
+}) {
   if (!metadata)
     return (
       <p style={{ fontSize: 12, color: "var(--text-muted)" }}>Loading...</p>
@@ -425,17 +439,24 @@ function EnginesTab({ metadata }: { metadata: DatasetMetadata | null }) {
         }}
       >
         {engines.map((id) => (
-          <EngineChip key={id} id={id} />
+          <EngineChip
+            key={id}
+            id={id}
+            onClick={() =>
+              onEngineClick(`Tell me about engine ${id} in FD001 `)
+            }
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function EngineChip({ id }: { id: number }) {
+function EngineChip({ id, onClick }: { id: number; onClick: () => void }) {
   const [hov, setHov] = useState(false);
   return (
     <div
+      onClick={onClick}
       onMouseEnter={() => setHov(true)}
       onMouseLeave={() => setHov(false)}
       title={`Engine ${id}`}
@@ -448,7 +469,7 @@ function EngineChip({ id }: { id: number }) {
         fontSize: 11,
         fontFamily: "var(--font-mono)",
         textAlign: "center",
-        cursor: "default",
+        cursor: "pointer",
         transition: "all 0.15s",
         userSelect: "none",
       }}
@@ -458,7 +479,7 @@ function EngineChip({ id }: { id: number }) {
   );
 }
 
-// ── Dataset Tab ──────────────────────────────────────────────
+// Dataset Tab
 
 function DatasetTab({ metadata }: { metadata: DatasetMetadata | null }) {
   if (!metadata)
@@ -511,7 +532,7 @@ function DatasetTab({ metadata }: { metadata: DatasetMetadata | null }) {
   );
 }
 
-// ── Shared primitives ────────────────────────────────────────
+// Shared primitives
 
 function Section({
   title,

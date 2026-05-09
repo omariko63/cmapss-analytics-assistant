@@ -32,6 +32,7 @@ export default function App() {
   );
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [metadata, setMetadata] = useState<DatasetMetadata | null>(null);
+  const [prefill, setPrefill] = useState<string>("");
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<
@@ -151,6 +152,7 @@ export default function App() {
         }}
         theme={theme}
         onToggleTheme={() => setTheme((t) => (t === "dark" ? "light" : "dark"))}
+        onEngineClick={(text) => setPrefill(text)}
       />
       <div
         style={{
@@ -166,7 +168,7 @@ export default function App() {
           loading={loading}
           onSuggestion={handleSend}
         />
-        <InputBar onSend={handleSend} disabled={loading} />
+        <InputBar onSend={handleSend} disabled={loading} prefill={prefill} />
       </div>
     </div>
   );
